@@ -52,8 +52,13 @@ Results on Android 15 (Termux, where the kernel already refuses
 `RTM_GETLINK`): the original shim fails with `Permission denied` in both
 modes. The patched shim returns the same 11 addresses as bionic in both.
 
-Not done: a RustDesk Android build with the patch, so a direct session
-between two phones has not been observed yet.
+Confirmed on devices with an equivalent binary patch of the released 1.5.3
+library (bionic's `getifaddrs()` instead of the shim; see
+[client-patch/](../../client-patch/README.md)): with the patched app on one
+phone, the session between two phones on one LAN connected directly over
+WebRTC in about 1.1 s, and the hbbs trace showed the patched side's
+`typ host` candidate. The C patch itself has been tested with the harness only,
+not in an app build.
 
 ### Issue text (draft, not posted)
 

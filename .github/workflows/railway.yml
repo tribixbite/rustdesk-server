@@ -20,6 +20,8 @@ on:
     paths-ignore:
       - "docs/**"
       - "**/*.md"
+      # Android client patch tooling; not part of any service image.
+      - "client-patch/**"
       - ".github/dependabot.yml"
       - ".github/workflows/codeql.yml"
       - ".github/ISSUE_TEMPLATE/**"
@@ -88,7 +90,7 @@ jobs:
                 rust=true; api=true
               else
                 changed=$(git diff --name-only "$BEFORE" "$GITHUB_SHA")
-                if printf '%s\n' "$changed" | awk '!/^api\// && NF {f=1} END {exit !f}'; then rust=true; fi
+                if printf '%s\n' "$changed" | awk '!/^api\// && !/^client-patch\// && NF {f=1} END {exit !f}'; then rust=true; fi
                 if printf '%s\n' "$changed" | awk '/^api\// {f=1} END {exit !f}'; then api=true; fi
               fi ;;
           esac

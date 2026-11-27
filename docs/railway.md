@@ -175,7 +175,11 @@ path whenever the two networks allow it.
 > replacement treats that as fatal, and WebRTC then offers no LAN (host)
 > candidates. Two Android phones behind one router can then reach each other
 > only through UDP hairpin NAT. A client fix and test harness are in
-> [docs/upstream/](upstream/README.md). Desktop clients gather host
+> [docs/upstream/](upstream/README.md), and [client-patch/](../client-patch/README.md)
+> builds a patched copy of the 1.5.3 APK; with it on one phone, two phones on
+> one LAN connected directly (about 1.1 s to connect). In that test a 64 MB
+> transfer took 16–18 s directly and 11 s through the relay, so direct is not
+> faster for bulk transfers yet. Desktop clients gather host
 > candidates normally, so an Android phone paired with a desktop, or two
 > devices on different networks, should still connect directly (not yet
 > observed here). Debug the signalling with

@@ -1,0 +1,3 @@
+# railway up honours .gitignore, which ignores db_v2.sqlite3 although it is
+# tracked. sqlx needs it at compile time (DATABASE_URL in .env), so re-include it.
+!db_v2.sqlite3

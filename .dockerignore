@@ -1,0 +1,6 @@
+# Keep the Docker build context to source files (railway/Dockerfile).
+# db_v2.sqlite3 stays in: sqlx checks queries against it at compile time.
+.git
+target
+debian-build
+id_ed25519*

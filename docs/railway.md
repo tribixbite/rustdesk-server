@@ -165,13 +165,22 @@ path whenever the two networks allow it.
 
 ## Direct connections (WebRTC)
 
-> **Status (2026-11-27).** The signalling has been checked end to end with
-> real clients. Official Android clients 1.5.0 → 1.5.3 on one LAN exchanged
-> the offer, the answer and all ICE candidates through hbbs, both ways (debug
-> log: `RUST_LOG=info,hbbs::rendezvous_server=debug`). In those tests ICE then
-> timed out on the clients (`webrtc wait_connected timeout`), and sessions ran
-> on the hbbr relay as designed. A direct WebRTC session through this
-> deployment has not been observed yet. See docs/fork-roadmap.md.
+> **Status (2026-11-27).** The signalling works end to end with real clients:
+> official Android clients 1.5.0 and 1.5.3 exchanged the offer, the answer and
+> all ICE candidates through hbbs, both ways. ICE then times out between two
+> **Android** clients (`webrtc wait_connected timeout`), and the session runs
+> on the hbbr relay. The cause is in the Android client, not the server: on
+> Android 11+ the app may not dump network links (SELinux `nlmsg_readpriv`
+> denial, logged at the moment each WebRTC session starts), its `getifaddrs()`
+> replacement treats that as fatal, and WebRTC then offers no LAN (host)
+> candidates. Two Android phones behind one router can then reach each other
+> only through UDP hairpin NAT. A client fix and test harness are in
+> [docs/upstream/](upstream/README.md). Desktop clients gather host
+> candidates normally, so an Android phone paired with a desktop, or two
+> devices on different networks, should still connect directly (not yet
+> observed here). Debug the signalling with
+> `RUST_LOG=info,hbbs::rendezvous_server=debug`, or `=trace` to log the SDP
+> and candidate text (it contains the machines' addresses).
 
 RustDesk clients from 1.5.0 can connect peer to peer over WebRTC even when they
 reach the server over WebSocket only. hbbs only passes the signalling between

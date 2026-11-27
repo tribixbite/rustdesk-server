@@ -14,7 +14,16 @@ rustdesk/rustdesk-server daily. Everything it adds is either a new directory
       official Android client 1.5.3.
 - [x] hbbs: WebRTC signalling relay (`src/webrtc_signal.rs`, `WEBRTC` switch).
       Verified with real clients for offer, answer and ICE both ways.
-- [x] hbbs: debug logs for WebRTC answers and ICE forwarding
+- [x] hbbs: debug logs for WebRTC answers and ICE forwarding; trace logs
+      with the SDP and candidate text (`hbbs::rendezvous_server=trace`)
+- [x] Real-device session tests (2026-11-27, Saga → Saga, Android 1.5.3/1.5.0,
+      one LAN): remote control and file transfer both ways over the hbbr
+      relay. A 64 MB file downloaded in about 12 s (about 5 MB/s) and uploaded
+      in under 29 s; MD5 matched both times.
+- [x] Root cause of the WebRTC ICE timeouts: the Android client gathers no
+      host candidates on Android 11+ (refused `RTM_GETLINK`; hbbs trace showed
+      only `typ srflx` both ways). Client patch, harness and issue draft in
+      docs/upstream/README.md.
 - [x] hbbr: per-session throughput log; relay limits raised through variables
       (docs/railway.md "Relay throughput")
 - [x] api: the client's Pro API (36 endpoints): login with TOTP and OIDC,
@@ -28,14 +37,14 @@ rustdesk/rustdesk-server daily. Everything it adds is either a new directory
 
 ## Open, by priority
 
-1. **WebRTC never got past ICE in the real-device tests.** Signalling completes,
-   but ICE times out between two Android phones on one LAN. Next steps:
-   - test a desktop client as controller (1.5.3, Windows or Linux), and a pair
-     on different networks (one on mobile data);
-   - get client-side ICE traces (desktop `--log` or the RUST_LOG of a debug
-     build) to see candidate pairs and check results;
-   - check the controller's view: does it apply B's candidates once the answer
-     is set (`client.rs` ICE bridge)?
+1. **Get the Android WebRTC fix upstream.** The patch in
+   docs/upstream/ (tested with a harness in Termux) needs to go to
+   rustdesk/rustdesk as an issue or PR; the issue text is drafted there and
+   needs the maintainer's approval before posting. After a client release
+   with it, retest two phones on one LAN (expect `typ host` candidates in the
+   hbbs trace and no relay session in the hbbr log). Until then, still worth
+   testing: an Android phone with a desktop 1.5.3 client, and two devices on
+   different networks.
 2. **OIDC login is untested against a real provider.** Configure one (for
    example Google), set `OIDC_PROVIDERS`, and log in from a client and from the
    console.
@@ -56,7 +65,8 @@ rustdesk/rustdesk-server daily. Everything it adds is either a new directory
    - LDAP;
    - GitHub OAuth (it is not OIDC);
    - deployment and access control enforced in hbbs;
-   - `/api/record` upload;
+   - `/api/record` upload: won't do. Only dead code in the OSS client calls
+     it, and it is unauthenticated by design;
    - switch-grant signature check (needs device pks from hbbs);
    - raw-TCP API proxy via hbbs (only used outside WebSocket mode).
 7. **Upstream contributions:** WebSocket registration (upstream issue #704) and

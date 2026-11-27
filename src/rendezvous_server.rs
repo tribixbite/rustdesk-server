@@ -671,8 +671,13 @@ impl RendezvousServer {
                     let addr_b = AddrMangle::decode(&rr.socket_addr);
                     rr.socket_addr = Default::default();
                     // Before set_pk, which replaces the id in the oneof.
-                    if !self.webrtc.answer_allowed(addr_b, rr.id(), addr.ip(), &rr.webrtc_sdp_answer) {
-                        rr.webrtc_sdp_answer.clear();
+                    if !rr.webrtc_sdp_answer.is_empty() {
+                        if self.webrtc.answer_allowed(addr_b, rr.id(), addr.ip(), &rr.webrtc_sdp_answer) {
+                            log::debug!("WebRTC answer from {} to {:?} forwarded", rr.id(), addr_b);
+                        } else {
+                            log::debug!("WebRTC answer from {} ({:?}) to {:?} dropped: no matching route", rr.id(), addr, addr_b);
+                            rr.webrtc_sdp_answer.clear();
+                        }
                     }
                     let id = rr.id();
                     if !id.is_empty() {
@@ -1085,6 +1090,7 @@ impl RendezvousServer {
                 Ice::Forward => {
                     if let Some(peer) = self.pm.get_in_memory(&ice.id).await {
                         let peer_addr = peer.read().await.socket_addr;
+                        log::debug!("IceCandidate from controller {:?} to {} forwarded", addr, ice.id);
                         self.tx.send(Data::Msg(forward_ice(ice).into(), peer_addr)).ok();
                         return true;
                     }
@@ -1098,9 +1104,11 @@ impl RendezvousServer {
                     Ice::Forward => {
                         let sink = self.tcp_punch.lock().await.get(&try_into_v4(ctl)).cloned();
                         if sink.is_some() {
+                            log::debug!("IceCandidate from {:?} to controller {:?} forwarded", addr, ctl);
                             Self::send_to_shared_sink(sink, forward_ice(ice)).await;
                             return true;
                         }
+                        log::debug!("IceCandidate from {:?}: controller {:?} has no open connection", addr, ctl);
                     }
                     Ice::OverBudget => over_budget = true,
                     Ice::NoMatch => {}

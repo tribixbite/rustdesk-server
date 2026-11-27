@@ -538,6 +538,32 @@ fn expire_waiter(peers: &mut HashMap<String, WaitingPeer>, id: &str, generation:
     }
 }
 
+/// Totals of one relay session, logged when it ends however `relay` returns.
+struct SessionLog {
+    id: String,
+    start: std::time::Instant,
+    /// Bytes received from the paired connection (`addr`) and from its peer.
+    from_addr: usize,
+    to_addr: usize,
+    downgraded: bool,
+}
+
+impl Drop for SessionLog {
+    fn drop(&mut self) {
+        let secs = self.start.elapsed().as_secs_f64();
+        let bits = (self.from_addr + self.to_addr) as f64 * 8.;
+        log::info!(
+            "Relay session {} ended after {:.1}s: {} bytes from it, {} bytes to it, {:.2} Mbit/s average, downgraded={}",
+            self.id,
+            secs,
+            self.from_addr,
+            self.to_addr,
+            if secs > 0. { bits / secs / 1e6 } else { 0. },
+            self.downgraded
+        );
+    }
+}
+
 /// Forwards traffic in both directions while enforcing relay limits and timeouts.
 async fn relay(
     addr: SocketAddr,
@@ -564,11 +590,19 @@ async fn relay(
         (sb * DOWNGRADE_THRESHOLD_100.load(Ordering::SeqCst) as f64 / 100. / 1000.) as usize; // in bit/ms
     let mut timer = interval(Duration::from_secs(3));
     let mut last_recv_time = std::time::Instant::now();
+    let mut session = SessionLog {
+        id: id.clone(),
+        start: std::time::Instant::now(),
+        from_addr: 0,
+        to_addr: 0,
+        downgraded: false,
+    };
     loop {
         tokio::select! {
             res = peer.recv() => {
                 if let Some(Ok(bytes)) = res {
                     last_recv_time = std::time::Instant::now();
+                    session.to_addr += bytes.len();
                     let nb = bytes.len() * 8;
                     if blacked || downgrade {
                         blacklist_limiter.consume(nb).await;
@@ -588,6 +622,7 @@ async fn relay(
             res = stream.recv() => {
                 if let Some(Ok(bytes)) = res {
                     last_recv_time = std::time::Instant::now();
+                    session.from_addr += bytes.len();
                     let nb = bytes.len() * 8;
                     if blacked || downgrade {
                         blacklist_limiter.consume(nb).await;
@@ -634,6 +669,7 @@ async fn relay(
                 && total > elapsed * downgrade_threshold
             {
                 downgrade = true;
+                session.downgraded = true;
                 log::info!(
                     "Downgrade {}, exceed downgrade threshold {}bit/ms in {}ms",
                     id,

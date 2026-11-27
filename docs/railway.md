@@ -165,6 +165,14 @@ path whenever the two networks allow it.
 
 ## Direct connections (WebRTC)
 
+> **Status (2026-11-27).** The signalling has been checked end to end with
+> real clients. Official Android clients 1.5.0 → 1.5.3 on one LAN exchanged
+> the offer, the answer and all ICE candidates through hbbs, both ways (debug
+> log: `RUST_LOG=info,hbbs::rendezvous_server=debug`). In those tests ICE then
+> timed out on the clients (`webrtc wait_connected timeout`), and sessions ran
+> on the hbbr relay as designed. A direct WebRTC session through this
+> deployment has not been observed yet. See docs/fork-roadmap.md.
+
 RustDesk clients from 1.5.0 can connect peer to peer over WebRTC even when they
 reach the server over WebSocket only. hbbs only passes the signalling between
 the two clients: the SDP offer and answer, and the ICE candidates (each

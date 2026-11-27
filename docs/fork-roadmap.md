@@ -67,9 +67,16 @@ rustdesk/rustdesk-server daily. Everything it adds is either a new directory
    and every later upstream lockfile change would then conflict in the daily
    merge. Prefer upstreaming them, or merge only security fixes and resolve the
    lock by hand. The `/ui` PRs (#1–#3) target upstream's unused Tauri UI.
-5. **CodeQL backlog** (~100 alerts, nearly all in upstream code and
-   `libs/hbb_common`, e.g. hard-coded test keys and peer pk logging). Triage,
-   and dismiss the test-only ones, or report them upstream.
+5. **CodeQL backlog** (triaged 2026-11-27: 121 open → 15). Dismissed: 66
+   hard-coded-crypto test vectors and 1 certificate check, all inside
+   `#[cfg(test)]` in `libs/hbb_common` ("used in tests"); 37 unpinned actions in
+   upstream's `build.yaml`, which runs only on tags/dispatch here; the
+   `rustdesk-utils genkeypair` key print; the opt-in, default-off
+   `danger_accept_invalid_cert` in the client proxy ("won't fix"). Fixed: the
+   fork's own `oven-sh/setup-bun` is pinned to a commit. Left open, all in
+   upstream lines: 10 `cleartext-logging` (relay/punch uuids and lengths at
+   info level) and 4 `unused-variable` in `handle_udp`. Worth reporting
+   upstream rather than patching here (merge conflicts).
 6. **hbbr relay loop:** forward each direction independently and batch flushes
    on WebSocket legs (transfer findings items 4–5) to cut per-session latency
    under load. Medium refactor of upstream `relay()`, so upstream it as a PR

@@ -111,7 +111,7 @@ jobs:
           bun install --frozen-lockfile
           bunx tsc --noEmit
           bun test
-          if [ -f web/main.tsx ]; then bun run build:web; fi
+          bun run build:web
 
       - name: Install Railway CLI
         if: steps.gate.outputs.deploy == 'true' && (steps.gate.outputs.rust == 'true' || steps.gate.outputs.api == 'true')

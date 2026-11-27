@@ -8,7 +8,7 @@
   "scripts": {
     "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts",
-    "build:web": "bun build web/main.tsx --outdir dist/web --minify --target browser",
+    "build:web": "bun web/build.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   },

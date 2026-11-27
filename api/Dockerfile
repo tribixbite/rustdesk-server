@@ -9,8 +9,7 @@ RUN bun install --frozen-lockfile
 COPY api/ ./
 # Type errors fail the image build instead of the running service.
 RUN bunx tsc --noEmit
-# TODO: drop the guard once api/web/ (the console) is committed.
-RUN if [ -f web/main.tsx ]; then bun run build:web; else mkdir -p dist/web; fi
+RUN bun run build:web
 
 FROM oven/bun:1.3.10-alpine
 WORKDIR /app

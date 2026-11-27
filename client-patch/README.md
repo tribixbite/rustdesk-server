@@ -111,7 +111,30 @@ Wi-Fi (idle RTT about 20 ms):
   about 2x throughput at about half the CPU per byte
   (https://webrtc.rs/blog/2026/07/18/from-13-mbps-to-beating-pion.html).
 
-# TODO closing the gap means upgrading RustDesk's webrtc-rs or backporting those changes
-into its 0.13 fork; both are upstream (rustdesk/rustdesk, rustdesk-org/webrtc) work.
-Until then, for large transfers between two devices on the same LAN, "Always connect via
-relay" on that peer is faster, at the cost of Railway egress.
+### Backport (2026-11-27): tribixbite/webrtc `perf/datachannel-throughput`
+
+Three changes on top of rustdesk-org/webrtc `49c89bd8`, in the same spirit as upstream's
+webrtc#813 (remove per-message scheduler hops), adapted to the 0.13 code:
+
+| Change | Where | What it removes |
+|---|---|---|
+| A | `sctp` write_loop | `spawn_blocking` per outbound packet just to marshal it |
+| B | `dtls` `write()` | the writer-task round trip (two task wake-ups) per application-data record |
+| C | `dtls` decrypted channel | capacity 1 → 64, so reader and consumer stop waking each other per record |
+
+Measured with `examples/rd-throughput` (two peers in one process over loopback, detached
+ordered channel, CC off, 64 KiB messages, 2 workers like RustDesk's `webrtc-io`, 128 MiB,
+on this S25 Ultra under load, runs interleaved):
+
+| Build | CPU per MB | Throughput |
+|---|---|---|
+| baseline `49c89bd8` | 116–187 ms (about 150) | 11–19 MB/s |
+| A + B | 62–104 ms | 17–28 MB/s |
+| A + B + C (pushed, `6e54ca66`) | 26–50 ms (about 40) | 38–74 MB/s |
+
+A burst-read in SCTP's read_loop (upstream's webrtc#815 idea) measured within noise and
+was dropped. dtls/sctp/data test suites pass; a Fable audit found no blocking bug, and its
+two risks were addressed (send errors now count as packet loss, up to 32 in a row).
+The RustDesk fork branch `fork-ci/android-apk-webrtc-perf` builds the APK against it.
+# TODO measure the CI APK on the two Sagas (same 64 MB test as above) and, if it holds,
+propose the three changes to rustdesk-org/webrtc.

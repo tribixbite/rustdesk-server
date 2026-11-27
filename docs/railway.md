@@ -47,8 +47,10 @@ mode expects a key exchange that open-source hbbs does not implement.
 
 Consequences of WebSocket-only mode:
 
-- Every session goes through hbbr; there is no direct peer-to-peer or LAN
-  hole punching. Session traffic counts as Railway egress.
+- There is no TCP, UDP or LAN hole punching. A session goes through hbbr
+  unless a direct WebRTC connection succeeds (see
+  [Direct connections (WebRTC)](#direct-connections-webrtc)). Relayed traffic
+  counts as Railway egress.
 - The plain TCP/UDP ports (21115–21117) are not exposed. Clients that are not
   set to WebSocket mode cannot reach the server.
 - Both servers run with `-k _`. A client needs the server's public key to start
@@ -64,6 +66,7 @@ Consequences of WebSocket-only mode:
 | `KEY_PRIV`      | both         | secret key from the same keypair                          |
 | `RELAY`         | hbbs         | the hbbr domain (`:21117` is appended when no port given) |
 | `RAILWAY_DOCKERFILE_PATH` | both | `railway/Dockerfile` (otherwise Railway auto-detects Rust and builds with Railpack, which fails) |
+| `WEBRTC`        | hbbs (optional) | `N` turns off WebRTC signalling; on when unset        |
 
 Both services must use the same keypair. The entrypoint validates it and
 rewrites `id_ed25519`/`id_ed25519.pub` in `/data` on every start, so the
@@ -136,3 +139,51 @@ The client only checks whether it starts with `https`
 (`hbb_common::websocket::check_ws`). The open-source server has no API, so
 account login and the shared address book are unavailable; those are
 RustDesk Server Pro features.
+
+## Direct connections (WebRTC)
+
+RustDesk clients from 1.5.0 can connect peer to peer over WebRTC even when they
+reach the server over WebSocket only. hbbs only passes the signalling between
+the two clients: the SDP offer and answer, and the ICE candidates (each
+machine's addresses) that follow. It never carries media or STUN traffic, so
+the server needs no UDP. Upstream hbbs does not forward these messages; this
+fork does, unless `WEBRTC=N` is set on hbbs. Each session logs
+`WebRTC offer from … to … forwarded` when it starts.
+
+To use it, turn it on in the client that **starts** the connection:
+**Settings → General → Other → Enable WebRTC P2P connection** (desktop), or
+the **Enable WebRTC P2P connection** switch in the mobile settings. This is the
+local option `enable-webrtc=Y`. It defaults to off for any self-hosted server,
+so it must be set explicitly. The controlled side needs no setting. Turn it on
+in both clients if you connect in both directions.
+
+How a connection is made:
+
+- The client tries WebRTC and the hbbr relay at the same time. A relay that is
+  ready first waits up to 2.5 s (client option `relay-fallback-delay`, in
+  seconds) for WebRTC, then is used if WebRTC has not connected. If WebRTC
+  fails, the session stays on the relay, with no action needed.
+- Both machines need outbound UDP: to public STUN servers (the client defaults
+  include Cloudflare's and Google's; override them with the client option
+  `ice-servers`), and to each other for the ICE checks.
+- WebRTC is not used when the client has a SOCKS proxy configured, or when the
+  peer is set to always connect via relay.
+
+NAT limits, with STUN only and no TURN server:
+
+- Usually works when at least one side has an endpoint-independent mapping
+  (full-cone, restricted-cone or port-restricted cone NAT), and on the same LAN.
+- Fails between two symmetric NATs, and between a symmetric and a
+  port-restricted NAT. These are common on mobile carrier-grade NAT and some
+  corporate firewalls. Such sessions fall back to the relay.
+- A TURN server would not help here. Railway has no UDP for one, and TURN over
+  TCP is itself a relay, with no gain over hbbr.
+
+The signalling is protected by WSS up to Railway's edge, like all other
+WebSocket traffic. It is plain text from the edge to hbbs inside Railway. hbbs
+forwards an answer or candidate only on a live route: the right peer ID, the
+offer's DTLS fingerprint as session key, and, for anything from the controlled
+side, the IP that side registered from. Routes end 60 s after their last
+message, 120 s after the offer at the latest, or when the controlling client's
+connection closes. The controlling client also checks the answer's DTLS
+fingerprint against the controlled client's key, which hbbs signs.

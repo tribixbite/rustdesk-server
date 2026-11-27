@@ -123,22 +123,45 @@ Known limits:
 
 ## Client configuration
 
-In each RustDesk client: **Settings → Network → ID/Relay server**:
+In each RustDesk client: **Settings → Network → ID/Relay server** (on mobile,
+**Settings → ID/Relay server**):
 
-| Field        | Value                    |
-| ------------ | ------------------------ |
-| ID server    | `<hbbs domain>`          |
-| Relay server | `<hbbr domain>`          |
-| API server   | `https://<hbbs domain>`  |
-| Key          | `KEY_PUB`                |
+| Field        | Value                        |
+| ------------ | ---------------------------- |
+| ID server    | `<hbbs domain>`              |
+| Relay server | `<hbbr domain>`              |
+| API server   | `https://<api domain>`       |
+| Key          | `KEY_PUB`                    |
 
-Then turn on **Use WebSocket** in the same Network page.
+Then turn on **Use WebSocket**. The web console's overview page shows these
+values, a configuration string for **Import server config**, and a QR code
+that mobile clients scan from the same dialog.
 
-The API server entry is what makes the client use `wss://` instead of `ws://`.
-The client only checks whether it starts with `https`
-(`hbb_common::websocket::check_ws`). The open-source server has no API, so
-account login and the shared address book are unavailable; those are
-RustDesk Server Pro features.
+The API server must start with `https`: that is what makes the client use
+`wss://` instead of `ws://` (`hbb_common::websocket::check_ws`). It points at
+the `api` service, which provides account login, shared address books,
+devices, strategies and audit logs (docs/api.md).
+
+## Relay throughput
+
+hbbr limits each relayed session to `SINGLE_BANDWIDTH` (default 128 Mbit/s,
+about 16 MB/s) and, after `DOWNGRADE_START_CHECK` (default 30 minutes), cuts a
+session that averaged over `DOWNGRADE_THRESHOLD` of that cap down to
+`LIMIT_SPEED` (default 32 Mbit/s). For a private relay these are raised on the
+hbbr service:
+
+| Variable                | Value   | Effect                                          |
+| ----------------------- | ------- | ----------------------------------------------- |
+| `SINGLE_BANDWIDTH`      | `2000`  | per-session cap in Mbit/s                       |
+| `TOTAL_BANDWIDTH`       | `4000`  | cap shared by all sessions                      |
+| `LIMIT_SPEED`           | `2000`  | downgrade target equal to the cap: no downgrade |
+| `DOWNGRADE_START_CHECK` | `86400` | first downgrade check after 24 h                |
+
+Every relayed byte is Railway egress. hbbr logs one line per session when it
+ends (duration, bytes each way, average Mbit/s, whether it was downgraded), so
+`railway logs --service hbbr` shows what a transfer actually achieved. Direct
+WebRTC sessions (below) do not pass through Railway at all and are the faster
+path whenever the two networks allow it.
 
 ## Direct connections (WebRTC)
 

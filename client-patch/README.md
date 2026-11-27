@@ -27,7 +27,7 @@ need the official one uninstalled, which deletes its settings and login.
 ## Fork build (preferred): the source fix, built by CI
 
 The source fix is on [tribixbite/rustdesk `fix/android-webrtc-host-candidates`](https://github.com/tribixbite/rustdesk/tree/fix/android-webrtc-host-candidates)
-(PR to upstream pending). The fork-only branch `fork-ci/android-apk` adds a workflow
+(draft PR https://github.com/rustdesk/rustdesk/pull/17293). The fork-only branch `fork-ci/android-apk` adds a workflow
 that runs upstream's own aarch64 Android build steps and uploads the APK as an artifact,
 debug-signed and without releases. To install it beside the official app:
 

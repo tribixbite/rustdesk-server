@@ -60,6 +60,8 @@ WebRTC in about 1.1 s, and the hbbs trace showed the patched side's
 `typ host` candidate. The C patch itself has been tested with the harness only,
 not in an app build.
 
+Submitted as draft PR https://github.com/rustdesk/rustdesk/pull/17293 (2026-11-27).
+
 ### Issue text (draft, not posted)
 
 > **Android: WebRTC gathers no host candidates on Android 11+ (RTM_GETLINK refused), so LAN P2P between phones fails**

@@ -62,11 +62,20 @@ rustdesk/rustdesk-server daily. Everything it adds is either a new directory
 3. **OIDC login is untested against a real provider.** Configure one (for
    example Google), set `OIDC_PROVIDERS`, and log in from a client and from the
    console.
-4. **Dependabot PRs #4–#8** (root crate: openssl, webpki, spin, sqlx 0.8,
-   jsonwebtoken 10). Merging them makes `Cargo.lock` diverge from upstream,
-   and every later upstream lockfile change would then conflict in the daily
-   merge. Prefer upstreaming them, or merge only security fixes and resolve the
-   lock by hand. The `/ui` PRs (#1–#3) target upstream's unused Tauri UI.
+4. **Dependabot PRs #4–#9** (root crate: openssl, webpki, spin, sqlx 0.8,
+   jsonwebtoken 10, bumpalo). Merging them makes `Cargo.lock` diverge from upstream:
+   when upstream later touches the same lock lines, the daily `merge-upstream`
+   call fails with a conflict and the fork stops tracking until it is resolved
+   by hand. Exposure checked 2026-11-27 (`cargo tree -e normal -i <crate>` for
+   x86_64 Linux): `axum` and `jsonwebtoken` are declared in upstream's
+   Cargo.toml but unused in `src/`; openssl (via native-tls) serves only the
+   outbound client side of hbb_common (proxy, ws client), which hbbs/hbbr do
+   not use; sqlx's rustls/webpki only matter for network databases, and hbbs
+   uses local SQLite; bumpalo is not in the Linux build. So the shipped
+   servers' real exposure is small. Recommendation: leave them unmerged and
+   report the lockfile bumps upstream; if one must land, the patch-level ones
+   (#4 openssl, #8 webpki, #7 spin) touch only their own lock entries. The
+   `/ui` PRs (#1–#3) target upstream's unused Tauri UI.
 5. **CodeQL backlog** (triaged 2026-11-27: 121 open → 15). Dismissed: 66
    hard-coded-crypto test vectors and 1 certificate check, all inside
    `#[cfg(test)]` in `libs/hbb_common` ("used in tests"); 37 unpinned actions in

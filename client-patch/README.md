@@ -135,6 +135,8 @@ on this S25 Ultra under load, runs interleaved):
 A burst-read in SCTP's read_loop (upstream's webrtc#815 idea) measured within noise and
 was dropped. dtls/sctp/data test suites pass; a Fable audit found no blocking bug, and its
 two risks were addressed (send errors now count as packet loss, up to 32 in a row).
-The RustDesk fork branch `fork-ci/android-apk-webrtc-perf` builds the APK against it.
-# TODO measure the CI APK on the two Sagas (same 64 MB test as above) and, if it holds,
-propose the three changes to rustdesk-org/webrtc.
+The RustDesk fork branch `fork-ci/android-apk-webrtc-perf` builds the APK against it (CI
+run 46059751072, green with the pinned Rust 1.75; library sha256 `dfd8f648…`). Since
+2026-11-27 15:10 that build is the copy installed on Saga .144.
+# TODO measure it phone-to-phone (same 64 MB test as above) once a second phone is free,
+and from a desktop; if it holds, propose the three changes to rustdesk-org/webrtc.

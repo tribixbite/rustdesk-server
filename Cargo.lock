@@ -1017,7 +1017,7 @@ dependencies = [
  "digest",
  "elliptic-curve",
  "rfc6979",
- "signature",
+ "signature 2.2.0",
  "spki",
 ]
 
@@ -1027,7 +1027,7 @@ version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d916019f70ae3a1faa1195685e290287f39207d38e6dfee727197cffcc002214"
 dependencies = [
- "signature",
+ "signature 1.5.0",
 ]
 
 [[package]]
@@ -3551,6 +3551,12 @@ checksum = "e51e73328dc4ac0c7ccbda3a494dfa03df1de2f46018127f60c693f2648455b0"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "signature"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f054c6c1a6e95179d6f23ed974060dcefb2d9388bb7256900badad682c499de4"
 
 [[package]]
 name = "signature"

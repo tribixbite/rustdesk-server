@@ -24,7 +24,25 @@ P2P fix", debuggable) so it installs **beside** the official app, and is signed 
 local key. A re-signed APK cannot update the official app; installing it in place would
 need the official one uninstalled, which deletes its settings and login.
 
-## Build
+## Fork build (preferred): the source fix, built by CI
+
+The source fix is on [tribixbite/rustdesk `fix/android-webrtc-host-candidates`](https://github.com/tribixbite/rustdesk/tree/fix/android-webrtc-host-candidates)
+(PR to upstream pending). The fork-only branch `fork-ci/android-apk` adds a workflow
+that runs upstream's own aarch64 Android build steps and uploads the APK as an artifact,
+debug-signed and without releases. To install it beside the official app:
+
+```sh
+gh run download <run id> -R tribixbite/rustdesk -n rustdesk-1.5.3-aarch64-test.apk -D /tmp/ci
+client-patch/clone.sh /tmp/ci/rustdesk-1.5.3-aarch64.apk   # -> build/<name>-p2pfix.apk
+adb install -r --no-incremental client-patch/build/rustdesk-1.5.3-aarch64-p2pfix.apk
+```
+
+`clone.sh` uses the same package name and key as `build.sh`, so it updates an installed
+binary-patched copy in place and keeps its settings. Verified 2026-11-27 (CI run
+46012040234): the CI library imports `if_indextoname`/`ioctl`; on the Saga it offered a
+`typ host` candidate and connected directly in about 1.0 s.
+
+## Build (binary patch of the release)
 
 ```sh
 client-patch/build.sh        # -> client-patch/build/rustdesk-1.5.3-p2pfix.apk

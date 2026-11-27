@@ -4,3 +4,6 @@
 target
 debian-build
 id_ed25519*
+api/node_modules
+api/dist
+api/data

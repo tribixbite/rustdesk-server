@@ -674,6 +674,7 @@ impl RendezvousServer {
                     if !rr.webrtc_sdp_answer.is_empty() {
                         if self.webrtc.answer_allowed(addr_b, rr.id(), addr.ip(), &rr.webrtc_sdp_answer) {
                             log::debug!("WebRTC answer from {} to {:?} forwarded", rr.id(), addr_b);
+                            log::trace!("WebRTC answer from {}: {}", rr.id(), rr.webrtc_sdp_answer);
                         } else {
                             log::debug!("WebRTC answer from {} ({:?}) to {:?} dropped: no matching route", rr.id(), addr, addr_b);
                             rr.webrtc_sdp_answer.clear();
@@ -954,6 +955,7 @@ impl RendezvousServer {
                     && self.webrtc.open(addr, &id, peer_addr.ip(), &ph.webrtc_sdp_offer)
                 {
                     log::info!("WebRTC offer from {} to {} forwarded", addr, id);
+                    log::trace!("WebRTC offer to {}: {}", id, ph.webrtc_sdp_offer);
                     punch_hole.webrtc_sdp_offer = ph.webrtc_sdp_offer;
                     punch_hole.force_relay = ph.force_relay;
                 }
@@ -1091,6 +1093,8 @@ impl RendezvousServer {
                     if let Some(peer) = self.pm.get_in_memory(&ice.id).await {
                         let peer_addr = peer.read().await.socket_addr;
                         log::debug!("IceCandidate from controller {:?} to {} forwarded", addr, ice.id);
+                        // Candidate text carries LAN addresses, so only at trace level.
+                        log::trace!("IceCandidate to {}: {}", ice.id, ice.candidate);
                         self.tx.send(Data::Msg(forward_ice(ice).into(), peer_addr)).ok();
                         return true;
                     }
@@ -1105,6 +1109,7 @@ impl RendezvousServer {
                         let sink = self.tcp_punch.lock().await.get(&try_into_v4(ctl)).cloned();
                         if sink.is_some() {
                             log::debug!("IceCandidate from {:?} to controller {:?} forwarded", addr, ctl);
+                            log::trace!("IceCandidate to controller {:?}: {}", ctl, ice.candidate);
                             Self::send_to_shared_sink(sink, forward_ice(ice)).await;
                             return true;
                         }

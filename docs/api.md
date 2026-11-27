@@ -60,6 +60,26 @@ Not provided, with the reason:
 | `OIDC_AUTO_CREATE` | `N` | `Y` creates a non-admin account on first OIDC login; otherwise the verified email must match an existing user |
 | `WEB_DIR` | `/app/dist/web` | built console |
 
+### Google sign-in (set up and verified 2026-11-27)
+
+1. Google Cloud console → new project → Google Auth Platform → Get started:
+   app name, support email, audience **External**, contact email.
+2. Clients → Create client → **Web application**, authorized redirect URI
+   `<PUBLIC_URL>/api/oidc/callback`. Copy the client ID and secret (the secret
+   is shown only once).
+3. Audience → Test users → add every family member's Google address. While the
+   app stays in "Testing" only those accounts can sign in (cap 100), and Google
+   shows no verification warning to them. "Publish app" lets any Google
+   account reach the login page, which is not needed here.
+4. Set `OIDC_PROVIDERS='[{"name":"google","issuer":"https://accounts.google.com","clientId":"…","clientSecret":"…"}]'`
+   on the api service, and give each user their Google address in the console
+   (Users → edit → email), since `OIDC_AUTO_CREATE` is off.
+
+Verified on the production server: the client's flow (`/api/oidc/auth`, the
+Google login in a browser, `/api/oidc/auth-query`) returned a token for the
+matching user. The token is handed out once; polling again reports the login
+as expired, and reloading the callback page cannot undo a finished login.
+
 Console settings (stored in the database): maximum peers per address book, and
 audit retention in days (default 180). Expired sessions, login attempts and
 audit records past retention are pruned hourly.

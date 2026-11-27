@@ -163,6 +163,8 @@ export function registerOidcRoutes(app: App): void {
       const state = c.req.query("state") ?? "";
       const session = db.query<OidcSessionRow, [string]>("SELECT * FROM oidc_sessions WHERE state = ?").get(state);
       if (!session || session.expires_at <= now()) return c.html(page("Login expired", "Start the login again from RustDesk."), 400);
+      // A replayed or reloaded callback must not overwrite a completed login with an error.
+      if (session.user_id !== null) return c.html(page("Already signed in", "This login is complete. You can close this tab."), 400);
       const fail = (message: string) => {
         db.query("UPDATE oidc_sessions SET error = ? WHERE code = ?").run(message, session.code);
         return c.html(page("Login failed", message), 400);
@@ -210,6 +212,9 @@ export function registerOidcRoutes(app: App): void {
       if ((c.req.query("id") ?? "") !== session.device_id) return c.json({ error: "Login was started on another device" });
       if (session.error) return c.json({ error: session.error });
       if (!session.access_token || session.user_id === null) return c.json({ error: PENDING });
+      // The token is handed out once: the row is the only place it exists in clear text
+      // (tokens are otherwise stored hashed), so it goes as soon as the client has it.
+      db.query("DELETE FROM oidc_sessions WHERE code = ?").run(session.code);
       const user = getUserById(db, session.user_id);
       if (!user) return c.json({ error: "Account no longer exists" });
       return c.json({ access_token: session.access_token, type: "access_token", user: toUserPayload(user) });

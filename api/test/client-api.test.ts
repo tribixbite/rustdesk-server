@@ -20,6 +20,32 @@ describe("account", () => {
     expect((await withOidc.call("GET", "/api/login-options")).json).toEqual(["oidc/google"]);
   });
 
+  test("OIDC: auth-query hands the token out once, and a replayed callback cannot undo the login", async () => {
+    const t = makeApp({
+      OIDC_PROVIDERS: JSON.stringify([{ name: "google", issuer: "https://accounts.google.com", clientId: "a", clientSecret: "b" }]),
+    });
+    const u = await t.user("alice", "password-1");
+    // A session as the callback leaves it after a successful provider login.
+    t.db
+      .query(
+        `INSERT INTO oidc_sessions (code, state, op, nonce, code_verifier, device_id, device_uuid, device_info, expires_at, user_id, access_token)
+         VALUES ('c1', 's1', 'google', 'n', 'v', ?, ?, '{}', ?, ?, 'tok-1')`,
+      )
+      .run(DEVICE.id, DEVICE.uuid, Math.floor(Date.now() / 1000) + 300, u.id);
+
+    const replay = await t.call("GET", "/api/oidc/callback?state=s1&code=x");
+    expect(replay.status).toBe(400);
+    expect(replay.text).toContain("Already signed in");
+
+    const wrongDevice = await t.call("GET", `/api/oidc/auth-query?code=c1&id=other`);
+    expect(wrongDevice.json).toEqual({ error: "Login was started on another device" });
+
+    const first = await t.call("GET", `/api/oidc/auth-query?code=c1&id=${DEVICE.id}&uuid=${DEVICE.uuid}`);
+    expect(first.json).toMatchObject({ access_token: "tok-1", type: "access_token", user: { name: "alice" } });
+    const second = await t.call("GET", `/api/oidc/auth-query?code=c1&id=${DEVICE.id}&uuid=${DEVICE.uuid}`);
+    expect(second.json).toEqual({ error: "Login expired, please try again" });
+  });
+
   test("password login returns access_token and a UserPayload; wrong password gives {error}", async () => {
     const t = makeApp();
     await t.user("alice", "password-1");

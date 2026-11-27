@@ -34,6 +34,8 @@ rustdesk/rustdesk-server daily. Everything it adds is either a new directory
       strategies and disconnects, accessible devices, audit, `--assign`
       (docs/api.md). Verified with the Android client: login, device
       ownership, shared-book read and write.
+- [x] api: Google sign-in (OIDC) configured and verified end to end on
+      production (docs/api.md "Google sign-in"); OIDC tokens handed out once
 - [x] api: OpenAPI 3.1 at `/openapi.json`, Scalar docs at `/docs`
 - [x] api: Preact web console at `/` (users, devices, groups, strategies, books,
       audit, tokens, settings, my account; config QR verified to decode)
@@ -60,10 +62,7 @@ rustdesk/rustdesk-server daily. Everything it adds is either a new directory
    throughput in a loopback benchmark; on the phones a 64 MB P2P upload went
    from 12.8 s to 4.8 s, level with the relay; client-patch/README.md). Next:
    propose it to rustdesk-org/webrtc (with the user's OK).
-3. **OIDC login is untested against a real provider.** Configure one (for
-   example Google), set `OIDC_PROVIDERS`, and log in from a client and from the
-   console.
-4. **Dependabot PRs #4–#9** (root crate: openssl, webpki, spin, sqlx 0.8,
+3. **Dependabot PRs #4–#9** (root crate: openssl, webpki, spin, sqlx 0.8,
    jsonwebtoken 10, bumpalo). Merging them makes `Cargo.lock` diverge from upstream:
    when upstream later touches the same lock lines, the daily `merge-upstream`
    call fails with a conflict and the fork stops tracking until it is resolved
@@ -77,7 +76,7 @@ rustdesk/rustdesk-server daily. Everything it adds is either a new directory
    report the lockfile bumps upstream; if one must land, the patch-level ones
    (#4 openssl, #8 webpki, #7 spin) touch only their own lock entries. The
    `/ui` PRs (#1–#3) target upstream's unused Tauri UI.
-5. **CodeQL backlog** (triaged 2026-11-27: 121 open → 15). Dismissed: 66
+4. **CodeQL backlog** (triaged 2026-11-27: 121 open → 15). Dismissed: 66
    hard-coded-crypto test vectors and 1 certificate check, all inside
    `#[cfg(test)]` in `libs/hbb_common` ("used in tests"); 37 unpinned actions in
    upstream's `build.yaml`, which runs only on tags/dispatch here; the
@@ -87,11 +86,11 @@ rustdesk/rustdesk-server daily. Everything it adds is either a new directory
    upstream lines: 10 `cleartext-logging` (relay/punch uuids and lengths at
    info level) and 4 `unused-variable` in `handle_udp`. Worth reporting
    upstream rather than patching here (merge conflicts).
-6. **hbbr relay loop:** forward each direction independently and batch flushes
+5. **hbbr relay loop:** forward each direction independently and batch flushes
    on WebSocket legs (transfer findings items 4–5) to cut per-session latency
    under load. Medium refactor of upstream `relay()`, so upstream it as a PR
    rather than carry it.
-7. **API features not implemented:**
+6. **API features not implemented:**
    - email codes/alarms (needs SMTP);
    - LDAP;
    - GitHub OAuth (it is not OIDC);
@@ -100,7 +99,7 @@ rustdesk/rustdesk-server daily. Everything it adds is either a new directory
      it, and it is unauthenticated by design;
    - switch-grant signature check (needs device pks from hbbs);
    - raw-TCP API proxy via hbbs (only used outside WebSocket mode).
-8. **Upstream contributions:** WebSocket registration (upstream issue #704) and
+7. **Upstream contributions:** WebSocket registration (upstream issue #704) and
    WebRTC over WebSocket (PR #734 covers TCP only) would remove most of this
    fork's diff to `src/rendezvous_server.rs`.
 

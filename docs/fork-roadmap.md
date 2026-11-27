@@ -49,10 +49,12 @@ rustdesk/rustdesk-server daily. Everything it adds is either a new directory
    hbbs trace and no relay session in the hbbr log). Until then, still worth
    testing: an Android phone with a desktop 1.5.3 client, and two devices on
    different networks.
-2. **WebRTC bulk throughput:** 64 MB took 16–18 s over the direct data
-   channel and 11 s through the relay on one LAN (client-patch/README.md).
-   Find the bottleneck (webrtc-rs SCTP window or pacing, client framing)
-   before recommending direct sessions for large transfers.
+2. **WebRTC bulk throughput:** profiled (client-patch/README.md "Why direct
+   transfers are slower"): about 11x the relay's sender CPU per byte, from
+   webrtc-rs 0.13's per-packet task hand-offs and one sendto per 1191-byte
+   packet. The fix is upstream: move rustdesk to a webrtc-rs with webrtc#813,
+   #815 and #820 (or backport them into rustdesk-org/webrtc). Next local
+   step: symbolized profile from an unstripped fork-ci build.
 3. **OIDC login is untested against a real provider.** Configure one (for
    example Google), set `OIDC_PROVIDERS`, and log in from a client and from the
    console.

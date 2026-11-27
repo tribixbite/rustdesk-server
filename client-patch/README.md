@@ -66,6 +66,34 @@ com.carriez.flutter_hbb.p2pfix`. Notes from testing:
 
 So the fix makes direct sessions work, and they keep file data off Railway, but on this
 LAN a bulk transfer over the WebRTC data channel was about 1.5x **slower** than over the
-relay. # TODO find out why (webrtc-rs SCTP window/pacing, or the client's data-channel
-framing) before calling WebRTC the faster path; `relay-fallback-delay` and "Always connect
-via relay" per peer are the client-side switches meanwhile.
+relay.
+
+## Why direct transfers are slower (profiled 2026-11-27)
+
+Same 64 MB download, patched copy sending, official app receiving, Saga ↔ Saga on one
+Wi-Fi (idle RTT about 20 ms):
+
+| Path | Time | Sender CPU (`simpleperf`, cpu-clock) |
+|---|---|---|
+| WebRTC, default (no SCTP congestion control) | 15.1–18.1 s | about 16 s of CPU in a 12 s window: 1.3 cores |
+| WebRTC, `allow-webrtc-congestion-control=Y` | 20.8 s | lower, but slower |
+| hbbr relay (peer set to "Always connect via relay") | 10.0–11.1 s | 1.8 s of CPU for the whole transfer |
+
+- About **11x more sender CPU per byte** over WebRTC. No single thread is pegged; the two
+  busiest run about 35–47% each, which is one serial pipeline hopping between threads.
+- Kernel time is 47% of the sender's CPU, and over half of that is threads parking and
+  waking each other (futex via `syscall`, eventfd via `write`); 34% is one `sendto` per
+  1191-byte SCTP packet (about 56,000 for 64 MB). Window and RTT are not the limit:
+  1 MiB in flight at 20 ms allows about 50 MB/s. Turning congestion control on made it
+  slower, so loss recovery is not the limit either.
+- Cause: RustDesk pins webrtc-rs 0.13 (fork `rustdesk-org/webrtc@49c89bd`, for its Rust
+  1.75 toolchain). Upstream webrtc-rs reworked exactly this hot path afterwards (coalesced
+  wakeups and a dedicated reactor, webrtc#813; burst-read and one SACK per batch,
+  webrtc#815 + rtc#124; zero-copy and hardware AES; UDP GSO/GRO, webrtc#820), reporting
+  about 2x throughput at about half the CPU per byte
+  (https://webrtc.rs/blog/2026/07/18/from-13-mbps-to-beating-pion.html).
+
+# TODO closing the gap means upgrading RustDesk's webrtc-rs or backporting those changes
+into its 0.13 fork; both are upstream (rustdesk/rustdesk, rustdesk-org/webrtc) work.
+Until then, for large transfers between two devices on the same LAN, "Always connect via
+relay" on that peer is faster, at the cost of Railway egress.

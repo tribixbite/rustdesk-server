@@ -159,7 +159,14 @@ hbbr service:
 
 Every relayed byte is Railway egress. hbbr logs one line per session when it
 ends (duration, bytes each way, average Mbit/s, whether it was downgraded), so
-`railway logs --service hbbr` shows what a transfer actually achieved. Direct
+`railway logs --service hbbr` shows what a transfer actually achieved.
+
+Measured ceiling (2026-11-27): two plain WebSocket legs on one home LAN,
+paired on `wss://<hbbr>/ws/relay` with no RustDesk client involved, moved
+64 MB in 3.5–5.6 s (11–18 MB/s, 95–155 Mbit/s; hbbr logged 75–108 Mbit/s per
+session). The RustDesk client's own file transfer over the same relay reached
+about 5–6 MB/s, so the client's transfer protocol is the limit there, not hbbr
+or the Railway edge. Direct
 WebRTC sessions (below) do not pass through Railway at all and are the faster
 path whenever the two networks allow it.
 

@@ -57,8 +57,9 @@ rustdesk/rustdesk-server daily. Everything it adds is either a new directory
    webrtc-rs 0.13's per-packet task hand-offs and one sendto per 1191-byte
    packet. Backported the main fixes into tribixbite/webrtc
    `perf/datachannel-throughput` (about 3.7x less CPU per MB, about 3x the
-   throughput in a loopback benchmark; client-patch/README.md). Next: measure
-   the CI APK on the phones, then propose it to rustdesk-org/webrtc.
+   throughput in a loopback benchmark; on the phones a 64 MB P2P upload went
+   from 12.8 s to 4.8 s, level with the relay; client-patch/README.md). Next:
+   propose it to rustdesk-org/webrtc (with the user's OK).
 3. **OIDC login is untested against a real provider.** Configure one (for
    example Google), set `OIDC_PROVIDERS`, and log in from a client and from the
    console.

@@ -138,5 +138,20 @@ two risks were addressed (send errors now count as packet loss, up to 32 in a ro
 The RustDesk fork branch `fork-ci/android-apk-webrtc-perf` builds the APK against it (CI
 run 46059751072, green with the pinned Rust 1.75; library sha256 `dfd8f648…`). Since
 2026-11-27 15:10 that build is the copy installed on Saga .144.
-# TODO measure it phone-to-phone (same 64 MB test as above) once a second phone is free,
-and from a desktop; if it holds, propose the three changes to rustdesk-org/webrtc.
+#### On the phones (2026-11-27, 64 MB upload, copy on Saga .144 sends as controller,
+official 1.5.0 on the Pixel 8 Pro receives, both on one Wi-Fi /24, same file each run)
+
+| Build of the sending copy | Path | Time | Sender busy-thread CPU |
+|---|---|---|---|
+| PR fix only (webrtc-rs `49c89bd8`) | WebRTC direct | 12.85 s, 12.69 s | 44–46% |
+| PR fix + backport (`6e54ca66`) | WebRTC direct | 4.88 s, 4.66 s | 17% |
+| either (WebRTC off on the controller) | hbbr relay | 4.23 s | - |
+
+The backport makes the direct path **about 2.7x faster** (≈13.7 MB/s against ≈5 MB/s) at
+less than half the sender CPU, and brings it level with the relay, which on this network is
+now limited by the same Wi-Fi. Each direct run was confirmed by hbbr (its racing relay
+session closed after 0.7–0.9 s with 116 bytes), and every MD5 matched.
+
+Note: `enable-webrtc` is a *local* option (`RustDesk_local.toml`); the copy only offered
+WebRTC as a controller after it was switched on in its settings screen.
+# TODO propose the three changes to rustdesk-org/webrtc (needs the maintainer's OK to post).

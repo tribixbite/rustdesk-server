@@ -1,0 +1,29 @@
+# Dependency update PRs for this fork. Security alerts and security-update PRs
+# are enabled in the repository settings; these entries add version updates.
+# Upstream (rustdesk/rustdesk-server) is merged daily by .github/workflows/railway.yml,
+# so dependencies it brings in are covered here too.
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    # Upstream pins many crates on purpose (forks under rustdesk-org, sqlx 0.6).
+    # Group the routine bumps so they arrive as one reviewable PR.
+    groups:
+      cargo-minor-patch:
+        update-types: [minor, patch]
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /railway
+    schedule:
+      interval: weekly

@@ -14,10 +14,19 @@ on:
     - cron: "17 9 * * *"
   push:
     branches: ["**"]
+    # Changes that cannot affect the build or the running servers.
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - ".github/dependabot.yml"
+      - ".github/workflows/codeql.yml"
+      - ".github/ISSUE_TEMPLATE/**"
   workflow_dispatch:
 
 permissions:
   contents: write
+  # to dispatch codeql.yml after an upstream merge
+  actions: write
 
 concurrency:
   group: railway-${{ github.ref }}
@@ -40,6 +49,14 @@ jobs:
           merge_type=$(gh api -X POST "repos/${GITHUB_REPOSITORY}/merge-upstream" \
             -f branch=master --jq .merge_type)
           echo "merge_type=${merge_type}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Scan merged upstream code
+        if: github.event_name == 'schedule' && steps.sync.outputs.merge_type != 'none'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # A push made with GITHUB_TOKEN does not trigger push workflows, so
+        # code scanning is started explicitly for the merged head.
+        run: gh workflow run codeql.yml --repo "$GITHUB_REPOSITORY" --ref master
 
       - name: Decide what to run
         id: gate

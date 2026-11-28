@@ -42,10 +42,11 @@ rustdesk/rustdesk-server daily. Everything it adds is either a new directory
 
 ## Open, by priority
 
-1. **Get the Android WebRTC fix upstream:** draft PR
-   https://github.com/rustdesk/rustdesk/pull/17293 (fork CI green, Fable-audited,
-   verified on devices with the CI-built APK). Mark it ready for review when you
-   are happy with it; follow up on maintainer comments. The patch in
+1. **Android WebRTC fix upstream:** #17293 was closed in favour of the
+   maintainer's own https://github.com/rustdesk/rustdesk/pull/17303. Our device
+   check of it shows host candidates gathered (docs/upstream/README.md); a direct
+   session on one subnet is still to be shown. Once a release has it, the
+   client-patch copy is no longer needed. The patch in
    docs/upstream/ (tested with a harness in Termux) needs to go to
    rustdesk/rustdesk as an issue or PR; the issue text is drafted there and
    needs the maintainer's approval before posting. Meanwhile client-patch/

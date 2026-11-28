@@ -61,6 +61,14 @@ WebRTC in about 1.1 s, and the hbbs trace showed the patched side's
 not in an app build.
 
 Submitted as draft PR https://github.com/rustdesk/rustdesk/pull/17293 (2026-11-27).
+Closed by the maintainer on 2026-11-28 ("I will fix it myself") in favour of
+https://github.com/rustdesk/rustdesk/pull/17303 (commit `18b74aaa`), which drops
+`RTM_GETLINK` entirely (`if_indextoname()` + `SIOCGIFFLAGS`) and also prefers `IFA_LOCAL`
+for IPv6. Device check of a fork-ci APK of `18b74aaa` (CI run 46143978852) on Saga .144,
+answering a control session from the other Saga: it offered a LAN `typ host` candidate
+(master offers none). That pair could not connect directly because the second Saga was on
+192.168.1.x and could not reach 192.168.0.x at all (ping 100% loss), so a direct session
+with #17303 is still to be shown on one subnet; the offerer side was not tested.
 
 ### Issue text (draft, not posted)
 
